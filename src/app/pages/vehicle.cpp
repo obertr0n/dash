@@ -42,7 +42,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     unit_label->setFont(unit_font);
     unit_label->setAlignment(Qt::AlignCenter);
 
-    // this->timer = new QTimer(this);
+    this->timer = new QTimer(this);
     // connect(this->timer, &QTimer::timeout, [this, bus, cmds]() {
     //     for (auto cmd : cmds) {
     //         bus->writeFrame(cmd.frame);
@@ -151,7 +151,10 @@ DataTab::DataTab(QWidget *parent) : QWidget(parent)
     QSizePolicy sp_right(QSizePolicy::Preferred, QSizePolicy::Preferred);
     sp_right.setHorizontalStretch(2);
     engine_data->setSizePolicy(sp_right);
-    for (auto &gauge : this->gauges) gauge->start();
+    for (auto &gauge : this->gauges)
+    {
+        gauge->start();
+    }
 }
 
 QWidget *DataTab::driving_data_widget()
