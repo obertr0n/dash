@@ -4,29 +4,28 @@
 #include "app/pages/vehicle.hpp"
 #include "app/window.hpp"
 #include "obd/conversions.hpp"
-#include "canbus/elm327.hpp"
 #include "plugins/vehicle_plugin.hpp"
 
 Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientation orientation, int rate,
-             std::vector<Command> cmds, int precision, obd_decoder_t decoder, QWidget *parent)
+             Command cmd, int precision, can_decoder_t decoder, QWidget *parent)
 : QWidget(parent)
 {
     Config *config = Config::get_instance();
     ICANBus *bus = SocketCANBus::get_instance();
 
     using namespace std::placeholders;
-    std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
+    // std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
 
-    bus->registerFrameHandler(cmds[0].frame.frameId()+0x9, callback);
-    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(cmds[0].frame.frameId()+0x9);
+    bus->registerFrameHandler(cmd.frame.frameId(), decoder);
+    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(cmds.frame.frameId());
 
     this->si = config->get_si_units();
 
     this->rate = rate;
     this->precision = precision;
 
-    this->cmds = cmds;
-    this->decoder = decoder;
+    this->cmd = cmd;
+    // this->decoder = decoder;
 
     QBoxLayout *layout;
     if (orientation == BOTTOM)
@@ -42,12 +41,12 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     unit_label->setFont(unit_font);
     unit_label->setAlignment(Qt::AlignCenter);
 
-    this->timer = new QTimer(this);
-    connect(this->timer, &QTimer::timeout, [this, bus, cmds]() {
-        for (auto cmd : cmds) {
-            bus->writeFrame(cmd.frame);
-        }
-    });
+    // this->timer = new QTimer(this);
+    // connect(this->timer, &QTimer::timeout, [this, bus, cmds]() {
+    //     for (auto cmd : cmds) {
+    //         bus->writeFrame(cmd.frame);
+    //     }
+    // });
 
 
 
@@ -104,29 +103,29 @@ VehiclePage::VehiclePage(QWidget *parent) : QTabWidget(parent)
 
     this->addTab(new DataTab(this), "Data");
 
-    this->get_plugins();
-    this->selector = new Selector(this->plugins.keys(), 0, Theme::font_14, this);
-    this->active_plugin = new QPluginLoader(this);
-    this->dialog = new Dialog(true, this->window());
-    this->dialog->set_body(this->selector);
-    this->selector->setUpdatesEnabled(true);
-    QPushButton *load_button = new QPushButton("load");
-    connect(load_button, &QPushButton::clicked, [this]() {
-        QString key = this->selector->get_current();
-        if (!key.isNull()) {
-            if (this->active_plugin->isLoaded())
-                this->active_plugin->unload();
-            this->active_plugin->setFileName(this->plugins[key].absoluteFilePath());
+    // this->get_plugins();
+    // this->selector = new Selector(this->plugins.keys(), 0, Theme::font_14, this);
+    // this->active_plugin = new QPluginLoader(this);
+    // this->dialog = new Dialog(true, this->window());
+    // this->dialog->set_body(this->selector);
+    // this->selector->setUpdatesEnabled(true);
+    // QPushButton *load_button = new QPushButton("load");
+    // connect(load_button, &QPushButton::clicked, [this]() {
+    //     QString key = this->selector->get_current();
+    //     if (!key.isNull()) {
+    //         if (this->active_plugin->isLoaded())
+    //             this->active_plugin->unload();
+    //         this->active_plugin->setFileName(this->plugins[key].absoluteFilePath());
 
-            if (VehiclePlugin *plugin = qobject_cast<VehiclePlugin *>(this->active_plugin->instance())) {
-                DASH_LOG(info) << "trying to load vehicle plugin";
-                plugin->init(SocketCANBus::get_instance());
-                for (QWidget *tab : plugin->widgets())
-                    this->addTab(tab, tab->objectName());
-            }
-        }
-    });
-    this->dialog->set_button(load_button);
+    //         if (VehiclePlugin *plugin = qobject_cast<VehiclePlugin *>(this->active_plugin->instance())) {
+    //             DASH_LOG(info) << "trying to load vehicle plugin";
+    //             plugin->init(SocketCANBus::get_instance());
+    //             for (QWidget *tab : plugin->widgets())
+    //                 this->addTab(tab, tab->objectName());
+    //         }
+    //     }
+    // });
+    // this->dialog->set_button(load_button);
 
     QPushButton *settings_button = new QPushButton(this);
     settings_button->setFlat(true);
@@ -142,20 +141,25 @@ DataTab::DataTab(QWidget *parent) : QWidget(parent)
 
     QHBoxLayout *layout = new QHBoxLayout(this);
 
-    QWidget *driving_data = this->driving_data_widget();
-    layout->addWidget(driving_data);
-    layout->addWidget(Theme::br(this, true));
-
     QWidget *engine_data = this->engine_data_widget();
     layout->addWidget(engine_data);
 
-    QSizePolicy sp_left(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    sp_left.setHorizontalStretch(5);
-    driving_data->setSizePolicy(sp_left);
-    QSizePolicy sp_right(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    sp_right.setHorizontalStretch(2);
-    engine_data->setSizePolicy(sp_right);
-    for (auto &gauge : this->gauges) gauge->start();
+    // QWidget *driving_data = this->driving_data_widget();
+    // layout->addWidget(driving_data);
+    // layout->addWidget(Theme::br(this, true));
+
+    // QSizePolicy sp_left(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    // sp_left.setHorizontalStretch(5);
+    // driving_data->setSizePolicy(sp_left);
+    
+    // QSizePolicy sp_right(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    // sp_right.setHorizontalStretch(2);
+    // engine_data->setSizePolicy(sp_right);
+
+    for (auto &gauge : this->gauges) 
+    {
+        gauge->start();
+    }
 }
 
 QWidget *DataTab::driving_data_widget()
@@ -183,9 +187,9 @@ QWidget *DataTab::speedo_tach_widget()
     layout->addWidget(speed);
     this->gauges.push_back(speed);
 
-    Gauge *rpm = new Gauge({"x1000rpm", "x1000rpm"}, QFont("Titillium Web", 72),
+    Gauge *rpm = new Gauge({"x100rpm", "x100rpm"}, QFont("Titillium Web", 72),
                            QFont("Montserrat", 16, QFont::Light, true), Gauge::BOTTOM, 100, {cmds.RPM}, 1,
-                           [](double x, bool _) { return x / 1000.0; }, widget);
+                           [](double x, bool _) { return x / 100.0; }, widget);
     layout->addWidget(rpm);
     this->gauges.push_back(rpm);
 

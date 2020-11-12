@@ -7,7 +7,7 @@
 
 struct Command {
     std::string description;
-    QCanBusFrame frame;
+    uint32_t frame;
     std::function<double(Response)> decoder;
 };
 
