@@ -12,10 +12,10 @@ struct Frame {
 };
 
 struct Frames {
-    Command COOLANT_TEMP;
-    Command RPM;
-    Command SPEED;
-    Command OUT_TEMP;
+    Frame COOLANT_TEMP;
+    Frame RPM;
+    Frame SPEED;
+    Frame OUT_TEMP;
 };
 
 extern Frames VehicleFrames;
