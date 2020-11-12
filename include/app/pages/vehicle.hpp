@@ -20,7 +20,7 @@ class Gauge : public QWidget {
     enum Orientation { BOTTOM, RIGHT };
 
     Gauge(units_t units, QFont value_font, QFont unit_font, Orientation orientation, int rate,
-          std::vector<Command> cmds, int precision, obd_decoder_t decoder, QWidget *parent = nullptr);
+          std::vector<Frame> cmds, int precision, obd_decoder_t decoder, QWidget *parent = nullptr);
 
     inline void start() { this->timer->start(this->rate); }
     inline void stop() { this->timer->stop(); }
@@ -32,7 +32,7 @@ class Gauge : public QWidget {
     QLabel *value_label;
 
     obd_decoder_t decoder;
-    std::vector<Command> cmds;
+    std::vector<Frame> cmds;
     std::map<int, double> dataMap;
 
 

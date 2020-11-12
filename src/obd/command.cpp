@@ -1,7 +1,7 @@
 #include "obd/command.hpp"
 #include "obd/decoders.hpp"
 
-Commands cmds = 
+Frames VehicleFrames = 
     {
         // {
         //     "DIS Main Text", 

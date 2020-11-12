@@ -8,7 +8,7 @@
 #include "plugins/vehicle_plugin.hpp"
 
 Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientation orientation, int rate,
-             std::vector<Command> cmds, int precision, obd_decoder_t decoder, QWidget *parent)
+             std::vector<Frame> cmds, int precision, obd_decoder_t decoder, QWidget *parent)
 : QWidget(parent)
 {
     Config *config = Config::get_instance();
@@ -18,7 +18,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
 
     bus->registerFrameHandler(cmds[0].frameID, callback);
-    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(frameID);
+    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(cmds[0].frameID);
 
     this->si = config->get_si_units();
 
@@ -42,12 +42,12 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     unit_label->setFont(unit_font);
     unit_label->setAlignment(Qt::AlignCenter);
 
-    this->timer = new QTimer(this);
-    connect(this->timer, &QTimer::timeout, [this, bus, cmds]() {
-        for (auto cmd : cmds) {
-            bus->writeFrame(cmd.frame);
-        }
-    });
+    // this->timer = new QTimer(this);
+    // connect(this->timer, &QTimer::timeout, [this, bus, cmds]() {
+    //     for (auto cmd : cmds) {
+    //         bus->writeFrame(cmd.frame);
+    //     }
+    // });
 
     connect(config, &Config::si_units_changed, [this, units, unit_label](bool si) {
         this->si = si;
@@ -62,6 +62,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
 
 void Gauge::can_callback(QByteArray payload){
     for(auto cmd : cmds) {
+        DASH_LOG(info)<<"Called handler for "<<(cmd.description);
         value_label->setText(this->format_value(this->decoder(cmd.decoder(payload), this->si)));
     }
 }
@@ -172,13 +173,13 @@ QWidget *DataTab::speedo_tach_widget()
     QHBoxLayout *layout = new QHBoxLayout(widget);
 
     Gauge *speed = new Gauge({"mph", "km/h"}, QFont("Titillium Web", 72), QFont("Montserrat", 16, QFont::Light, true),
-                             Gauge::BOTTOM, 100, {cmds.SPEED}, 0,
+                             Gauge::BOTTOM, 100, {VehicleFrames.SPEED}, 0,
                              [](double x, bool si) { return si ? x : kph_to_mph(x); }, widget);
     layout->addWidget(speed);
     this->gauges.push_back(speed);
 
     Gauge *rpm = new Gauge({"x100rpm", "x100rpm"}, QFont("Titillium Web", 72),
-                           QFont("Montserrat", 16, QFont::Light, true), Gauge::BOTTOM, 100, {cmds.RPM}, 1,
+                           QFont("Montserrat", 16, QFont::Light, true), Gauge::BOTTOM, 100, {VehicleFrames.RPM}, 1,
                            [](double x, bool _) { return x; }, widget);
     layout->addWidget(rpm);
     this->gauges.push_back(rpm);
@@ -207,7 +208,7 @@ QWidget *DataTab::coolant_temp_widget()
 
     Gauge *coolant_temp = new Gauge(
         {"°F", "°C"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true), Gauge::RIGHT, 5000,
-        {cmds.COOLANT_TEMP}, 1, [](double x, bool si) { return si ? x : c_to_f(x); }, widget);
+        {VehicleFrames.COOLANT_TEMP}, 1, [](double x, bool si) { return si ? x : c_to_f(x); }, widget);
     layout->addWidget(coolant_temp);
     this->gauges.push_back(coolant_temp);
 
