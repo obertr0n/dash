@@ -42,9 +42,8 @@ void SocketCANBus::framesAvailable()
 {
     int numFrames = bus->framesAvailable();
     if(numFrames>0){
-        QVector<QCanBusFrame> frames =  bus->readAllFrames();
-        for(int i = 0; i<frames.length(); i++){
-            QCanBusFrame frame = frames.at(i);
+        for(int i = 0; i<numFrames; i++){
+            QCanBusFrame frame = bus->readFrame();
             if (callbacks.find(frame.frameId()) != callbacks.end())
             {
                 for(auto callback : callbacks[frame.frameId()]){
