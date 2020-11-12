@@ -7,17 +7,15 @@
 
 struct Command {
     std::string description;
-    QCanBusFrame frame;
-    std::function<double(Response)> decoder;
+    uint32_t frameID;
+    std::function<double(QByteArray)> decoder;
 };
 
 struct Commands {
-    Command LOAD;
     Command COOLANT_TEMP;
     Command RPM;
     Command SPEED;
-    Command INTAKE_TEMP;
-    Command MAF;
+    Command OUT_TEMP;
 };
 
 extern Commands cmds;

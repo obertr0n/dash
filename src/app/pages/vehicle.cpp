@@ -17,8 +17,8 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     using namespace std::placeholders;
     std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
 
-    bus->registerFrameHandler(cmds[0].frame.frameId()+0x9, callback);
-    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(cmds[0].frame.frameId()+0x9);
+    bus->registerFrameHandler(cmds[0].frameID, callback);
+    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(frameID);
 
     this->si = config->get_si_units();
 
@@ -49,8 +49,6 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
         }
     });
 
-
-
     connect(config, &Config::si_units_changed, [this, units, unit_label](bool si) {
         this->si = si;
         unit_label->setText(this->si ? units.second : units.first);
@@ -63,11 +61,8 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
 }
 
 void Gauge::can_callback(QByteArray payload){
-    Response resp = Response(payload);
-    for(auto cmd : cmds){
-        if(cmd.frame.payload().at(2) == resp.PID){
-            value_label->setText(this->format_value(this->decoder(cmd.decoder(resp), this->si)));
-        }
+    for(auto cmd : cmds) {
+        value_label->setText(this->format_value(this->decoder(cmd.decoder(payload), this->si)));
     }
 }
 
@@ -104,29 +99,29 @@ VehiclePage::VehiclePage(QWidget *parent) : QTabWidget(parent)
 
     this->addTab(new DataTab(this), "Data");
 
-    this->get_plugins();
-    this->selector = new Selector(this->plugins.keys(), 0, Theme::font_14, this);
-    this->active_plugin = new QPluginLoader(this);
-    this->dialog = new Dialog(true, this->window());
-    this->dialog->set_body(this->selector);
-    this->selector->setUpdatesEnabled(true);
-    QPushButton *load_button = new QPushButton("load");
-    connect(load_button, &QPushButton::clicked, [this]() {
-        QString key = this->selector->get_current();
-        if (!key.isNull()) {
-            if (this->active_plugin->isLoaded())
-                this->active_plugin->unload();
-            this->active_plugin->setFileName(this->plugins[key].absoluteFilePath());
+    // this->get_plugins();
+    // this->selector = new Selector(this->plugins.keys(), 0, Theme::font_14, this);
+    // this->active_plugin = new QPluginLoader(this);
+    // this->dialog = new Dialog(true, this->window());
+    // this->dialog->set_body(this->selector);
+    // this->selector->setUpdatesEnabled(true);
+    // QPushButton *load_button = new QPushButton("load");
+    // connect(load_button, &QPushButton::clicked, [this]() {
+    //     QString key = this->selector->get_current();
+    //     if (!key.isNull()) {
+    //         if (this->active_plugin->isLoaded())
+    //             this->active_plugin->unload();
+    //         this->active_plugin->setFileName(this->plugins[key].absoluteFilePath());
 
-            if (VehiclePlugin *plugin = qobject_cast<VehiclePlugin *>(this->active_plugin->instance())) {
-                DASH_LOG(info) << "trying to load vehicle plugin";
-                plugin->init(SocketCANBus::get_instance());
-                for (QWidget *tab : plugin->widgets())
-                    this->addTab(tab, tab->objectName());
-            }
-        }
-    });
-    this->dialog->set_button(load_button);
+    //         if (VehiclePlugin *plugin = qobject_cast<VehiclePlugin *>(this->active_plugin->instance())) {
+    //             DASH_LOG(info) << "trying to load vehicle plugin";
+    //             plugin->init(SocketCANBus::get_instance());
+    //             for (QWidget *tab : plugin->widgets())
+    //                 this->addTab(tab, tab->objectName());
+    //         }
+    //     }
+    // });
+    // this->dialog->set_button(load_button);
 
     QPushButton *settings_button = new QPushButton(this);
     settings_button->setFlat(true);
@@ -167,7 +162,6 @@ QWidget *DataTab::driving_data_widget()
     layout->addWidget(this->speedo_tach_widget());
     layout->addStretch();
     layout->addWidget(Theme::br(widget));
-    // layout->addWidget(this->mileage_data_widget());
 
     return widget;
 }
@@ -183,31 +177,14 @@ QWidget *DataTab::speedo_tach_widget()
     layout->addWidget(speed);
     this->gauges.push_back(speed);
 
-    Gauge *rpm = new Gauge({"x1000rpm", "x1000rpm"}, QFont("Titillium Web", 72),
+    Gauge *rpm = new Gauge({"x100rpm", "x100rpm"}, QFont("Titillium Web", 72),
                            QFont("Montserrat", 16, QFont::Light, true), Gauge::BOTTOM, 100, {cmds.RPM}, 1,
-                           [](double x, bool _) { return x / 1000.0; }, widget);
+                           [](double x, bool _) { return x; }, widget);
     layout->addWidget(rpm);
     this->gauges.push_back(rpm);
 
     return widget;
 }
-
-// QWidget *DataTab::mileage_data_widget()
-// {
-//     QWidget *widget = new QWidget(this);
-//     QHBoxLayout *layout = new QHBoxLayout(widget);
-
-//     Gauge *mileage = new Gauge({"mpg", "km/L"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true),
-//                                Gauge::BOTTOM, 100, {cmds.SPEED, cmds.MAF}, 1,
-//                                [](std::vector<double> x, bool si) {
-//                                    return (si ? x[0] : kph_to_mph(x[0])) / (si ? gps_to_lph(x[1]) : gps_to_gph(x[1]));
-//                                },
-//                                widget);
-//     layout->addWidget(mileage);
-//     this->gauges.push_back(mileage);
-
-//     return widget;
-// }
 
 QWidget *DataTab::engine_data_widget()
 {
@@ -218,8 +195,6 @@ QWidget *DataTab::engine_data_widget()
     layout->addWidget(this->coolant_temp_widget());
     layout->addStretch();
     layout->addWidget(Theme::br(widget));
-    layout->addStretch();
-    layout->addWidget(this->engine_load_widget());
     layout->addStretch();
 
     return widget;
@@ -244,20 +219,3 @@ QWidget *DataTab::coolant_temp_widget()
     return widget;
 }
 
-QWidget *DataTab::engine_load_widget()
-{
-    QWidget *widget = new QWidget(this);
-    QVBoxLayout *layout = new QVBoxLayout(widget);
-
-    Gauge *engine_load =
-        new Gauge({"%", "%"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true), Gauge::RIGHT,
-                  500, {cmds.LOAD}, 1, [](double x, bool _) { return x; }, widget);
-    layout->addWidget(engine_load);
-    this->gauges.push_back(engine_load);
-
-    QLabel *engine_load_label = new QLabel("load", widget);
-    engine_load_label->setFont(QFont("Montserrat", 14, QFont::Light));
-    engine_load_label->setAlignment(Qt::AlignHCenter);
-    layout->addWidget(engine_load_label);
-    return widget;
-}
