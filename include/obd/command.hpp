@@ -5,17 +5,19 @@
 #include <QCanBusFrame>
 #include "obd/message.hpp"
 
-struct CanFrameDecoder {
+struct Command {
     std::string description;
-    uint32_t frameID;
-    std::function<double(QByteArray)> decoder;
+    QCanBusFrame frame;
+    std::function<double(Response)> decoder;
 };
 
-struct FrameDecoders {
-    CanFrameDecoder COOLANT_TEMP;
-    CanFrameDecoder RPM;
-    CanFrameDecoder SPEED;
-    CanFrameDecoder OUT_TEMP;
+struct Commands {
+    Command LOAD;
+    Command COOLANT_TEMP;
+    Command RPM;
+    Command SPEED;
+    Command INTAKE_TEMP;
+    Command MAF;
 };
 
-extern FrameDecoders VehicleFrames;
+extern Commands cmds;

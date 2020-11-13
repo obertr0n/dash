@@ -5,12 +5,10 @@
 #include <QPluginLoader>
 
 #include "canbus/socketcanbus.hpp"
-#include "obd/message.hpp"
-#include "obd/command.hpp"
+#include "canbus/canframes.hpp"
 #include "app/widgets/selector.hpp"
 #include "app/widgets/dialog.hpp"
 
-typedef std::function<double(double, bool)> obd_decoder_t;
 typedef std::function<double(double, bool)> can_decoder_t;
 typedef QPair<QString, QString> units_t;
 
@@ -21,7 +19,7 @@ class Gauge : public QWidget {
     enum Orientation { BOTTOM, RIGHT };
 
     Gauge(units_t units, QFont value_font, QFont unit_font, Orientation orientation, int rate,
-          std::vector<CanFrameDecoder> cmds, int precision, can_decoder_t decoder, QWidget *parent = nullptr);
+          std::vector<CanFrameMsgDecoder> frames, int precision, can_decoder_t decoder, QWidget *parent = nullptr);
 
     inline void start() { this->timer->start(this->rate); }
     inline void stop() { this->timer->stop(); }
@@ -33,7 +31,7 @@ class Gauge : public QWidget {
     QLabel *value_label;
 
     can_decoder_t decoder;
-    std::vector<CanFrameDecoder> candecs;
+    std::vector<CanFrameMsgDecoder> canframes;
     std::map<int, double> dataMap;
 
 

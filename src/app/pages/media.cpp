@@ -39,9 +39,8 @@ BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, CanFrameDecoder dec) : Q
 
 void BluetoothPlayerTab::can_callback(QByteArray payload)
 {
-    DASH_LOG(info)<<"Called handler for "<<(dec.description);
-    value_label->setText(this->format_value(this->decoder(dec.decoder(payload), this->si)));
-    
+    DASH_LOG(info) << "Called handler for " << (dec.description);
+    dec.decoder(payload);
 }
 
 QWidget *BluetoothPlayerTab::track_widget()

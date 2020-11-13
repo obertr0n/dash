@@ -3,12 +3,9 @@
 #include "app/config.hpp"
 #include "app/pages/vehicle.hpp"
 #include "app/window.hpp"
-#include "obd/conversions.hpp"
-// #include "canbus/elm327.hpp"
-// #include "plugins/vehicle_plugin.hpp"
 
 Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientation orientation, int rate,
-             std::vector<CanFrameDecoder> cmds, int precision, can_decoder_t decoder, QWidget *parent)
+             std::vector<CanFrameMsgDecoder> frames, int precision, can_decoder_t decoder, QWidget *parent)
 : QWidget(parent)
 {
     Config *config = Config::get_instance();
@@ -17,15 +14,15 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     using namespace std::placeholders;
     std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
 
-    bus->registerFrameHandler(cmds[0].frameID, callback);
-    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(cmds[0].frameID);
+    bus->registerFrameHandler(frames[0].frameID, callback);
+    DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(frames[0].frameID);
 
     this->si = config->get_si_units();
 
     this->rate = rate;
     this->precision = precision;
 
-    this->candecs = cmds;
+    this->canframes = frames;
     this->decoder = decoder;
 
     QBoxLayout *layout;
@@ -61,9 +58,9 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
 }
 
 void Gauge::can_callback(QByteArray payload){
-    for(auto dec : candecs) {
-        DASH_LOG(info)<<"Called handler for "<<(dec.description);
-        value_label->setText(this->format_value(this->decoder(dec.decoder(payload), this->si)));
+    for(auto frame : canframes) {
+        DASH_LOG(info)<<"Called handler for "<<(frame.description);
+        value_label->setText(this->format_value(this->decoder(frame.decoder(payload), this->si)));
     }
 }
 
