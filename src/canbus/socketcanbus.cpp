@@ -47,7 +47,7 @@ void SocketCANBus::framesAvailable()
             if (callbacks.find(frame.frameId()) != callbacks.end())
             {
                 for(auto callback : callbacks[frame.frameId()]){
-                    callback(frame.payload());
+                    callback(frame.frameId(), frame.payload());
                 }
             }
         }
@@ -56,7 +56,7 @@ void SocketCANBus::framesAvailable()
 } 
 
 
-void SocketCANBus::registerFrameHandler(int id, std::function<void(QByteArray)> callback)
+void SocketCANBus::registerFrameHandler(int id, std::function<void(uint32_t, QByteArray)> callback)
 {
     callbacks[id].push_back(callback);
     QCanBusDevice::Filter filter;

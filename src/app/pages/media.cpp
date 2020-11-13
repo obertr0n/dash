@@ -8,28 +8,33 @@
 #include <QListWidgetItem>
 #include <QMediaPlaylist>
 
-#include "canbus/socketcanbus.hpp"
 #include "app/pages/media.hpp"
 #include "app/window.hpp"
+#include "canbus/socketcanbus.hpp"
+#include "canbus/canframes.hpp"
 
 MediaPage::MediaPage(QWidget *parent) : QTabWidget(parent)
 {
     this->tabBar()->setFont(Theme::font_16);
 
     // this->addTab(new RadioPlayerTab(this), "Radio");
-    this->addTab(new BluetoothPlayerTab(this), "Bluetooth");
+    this->addTab(new BluetoothPlayerTab(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "Bluetooth");
     this->addTab(new LocalPlayerTab(this), "Local");
 }
 
-BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, CanFrameDecoder dec) : QWidget(parent)
+BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs) : QWidget(parent)
 {
     this->bluetooth = Bluetooth::get_instance();
 
     ICANBus *bus = SocketCANBus::get_instance();
-    std::function<void(QByteArray)> callback = std::bind(&BluetoothPlayerTab::can_callback, this, std::placeholders::_1);
-
-    bus->registerFrameHandler(dec.frameID, callback);
-    DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
+    std::function<void(uint32_t, QByteArray)> callback = std::bind(&BluetoothPlayerTab::can_callback, this, std::placeholders::_1, std::placeholders::_2);
+    
+    for (auto dec : decs)
+    {
+        bus->registerFrameHandler(dec.frameID, callback);
+        DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
+    }
+    framedecs = decs;
 
     QVBoxLayout *layout = new QVBoxLayout(this);
 
@@ -37,10 +42,34 @@ BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, CanFrameDecoder dec) : Q
     layout->addWidget(this->controls_widget());
 }
 
-void BluetoothPlayerTab::can_callback(QByteArray payload)
+void BluetoothPlayerTab::can_callback(uint32_t id, QByteArray payload)
 {
-    DASH_LOG(info) << "Called handler for " << (dec.description);
-    dec.decoder(payload);
+    for(auto dec : framedecs)
+    {
+        if(dec.frameID == id)
+        {
+            DASH_LOG(info) << "Called handler for " << (dec.description);
+            switch(dec.decoder(payload))
+            {
+                case AhBtnKey::CIM_RIGHT_DOWN:
+                case AhBtnKey::EHU_LEFT:
+                {
+                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
+                    if (media_player != nullptr)
+                        media_player->previous()->waitForFinished();
+                    break;
+                }
+                case AhBtnKey::CIM_RIGHT_UP:
+                case AhBtnKey::EHU_RIGHT:
+                {
+                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
+                    if (media_player != nullptr)
+                        media_player->next()->waitForFinished();
+                    break;
+                }
+            }
+        }
+    }
 }
 
 QWidget *BluetoothPlayerTab::track_widget()
@@ -108,6 +137,7 @@ QWidget *BluetoothPlayerTab::controls_widget()
     bool status = (media_player != nullptr) ? media_player->status() == BluezQt::MediaPlayer::Status::Playing : false;
     play_button->setChecked(status);
     play_button->setIconSize(Theme::icon_56);
+    
     connect(play_button, &QPushButton::clicked, [bluetooth = this->bluetooth, play_button](bool checked = false) {
         play_button->setChecked(!checked);
 
@@ -119,6 +149,7 @@ QWidget *BluetoothPlayerTab::controls_widget()
                 media_player->pause()->waitForFinished();
         }
     });
+
     connect(this->bluetooth, &Bluetooth::media_player_status_changed,
             [play_button](BluezQt::MediaPlayer::Status status) {
                 play_button->setChecked(status == BluezQt::MediaPlayer::Status::Playing);
@@ -233,9 +264,19 @@ QWidget *RadioPlayerTab::controls_widget()
     return widget;
 }
 
-LocalPlayerTab::LocalPlayerTab(QWidget *parent) : QWidget(parent)
+LocalPlayerTab::LocalPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs) : QWidget(parent)
 {
     this->config = Config::get_instance();
+
+    ICANBus *bus = SocketCANBus::get_instance();
+    std::function<void(uint32_t, QByteArray)> callback = std::bind(&LocalPlayerTab::can_callback, this, std::placeholders::_1, std::placeholders::_2);
+    
+    for (auto dec : decs)
+    {
+        bus->registerFrameHandler(dec.frameID, callback);
+        DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
+    }
+    framedecs = decs;
 
     QMediaPlaylist *playlist = new QMediaPlaylist(this);
     playlist->setPlaybackMode(QMediaPlaylist::Loop);
@@ -252,6 +293,36 @@ LocalPlayerTab::LocalPlayerTab(QWidget *parent) : QWidget(parent)
     layout->addWidget(this->playlist_widget());
     layout->addWidget(this->seek_widget());
     layout->addWidget(this->controls_widget());
+}
+
+void LocalPlayerTab::can_callback(uint32_t id, QByteArray payload)
+{
+    for(auto dec : framedecs)
+    {
+        if(dec.frameID == id)
+        {
+            DASH_LOG(info) << "Called handler for " << (dec.description);
+            switch(dec.decoder(payload))
+            {
+                case AhBtnKey::CIM_RIGHT_DOWN:
+                case AhBtnKey::EHU_LEFT:
+                {
+                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
+                    if (media_player != nullptr)
+                        media_player->previous()->waitForFinished();
+                    break;
+                }
+                case AhBtnKey::CIM_RIGHT_UP:
+                case AhBtnKey::EHU_RIGHT:
+                {
+                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
+                    if (media_player != nullptr)
+                        media_player->next()->waitForFinished();
+                    break;
+                }
+            }
+        }
+    }
 }
 
 QWidget *LocalPlayerTab::playlist_widget()

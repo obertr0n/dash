@@ -23,7 +23,7 @@ class Gauge : public QWidget {
 
     inline void start() { this->timer->start(this->rate); }
     inline void stop() { this->timer->stop(); }
-    void can_callback(QByteArray payload);
+    void can_callback(uint32_t id, QByteArray payload);
 
    private:
     QString format_value(double value);

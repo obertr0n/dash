@@ -12,7 +12,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     ICANBus *bus = SocketCANBus::get_instance();
 
     using namespace std::placeholders;
-    std::function<void(QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1);
+    std::function<void(uint32_t QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1, std::placeholders::_2);
 
     bus->registerFrameHandler(frames[0].frameID, callback);
     DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(frames[0].frameID);
@@ -57,7 +57,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     layout->addWidget(unit_label);
 }
 
-void Gauge::can_callback(QByteArray payload){
+void Gauge::can_callback(uint32_t id, QByteArray payload){
     for(auto frame : canframes) {
         DASH_LOG(info)<<"Called handler for "<<(frame.description);
         value_label->setText(this->format_value(this->decoder(frame.decoder(payload), this->si)));

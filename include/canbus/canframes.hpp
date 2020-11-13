@@ -2,7 +2,8 @@
 
 #include <functional>
 #include <string>
-#include <QCanBusFrame>
+#include <QByteArray>
+#include <QObject>
 
 enum AhBtnKey
 {
@@ -44,12 +45,25 @@ struct CanFrameBtnDecoder {
 };
 
 struct FrameDecoders {
+    CanFrameBtnDecoder CIM_BTN;
+    CanFrameBtnDecoder EHU_BTN;
     CanFrameMsgDecoder COOLANT_TEMP;
     CanFrameMsgDecoder RPM;
     CanFrameMsgDecoder SPEED;
     CanFrameMsgDecoder OUT_TEMP;
-    CanFrameBtnDecoder CIM_BTN;
-    CanFrameBtnDecoder EHU_BTN;
 };
 
 extern FrameDecoders VehicleFrames;
+
+class AstraHDecoder public QObject
+{
+    Q_OBJECT
+private:
+public:
+    AstraHDecoder();
+    ~AstraHDecoder();
+    static void btn_press(QByteArray data);
+
+public signals:
+    void buttonPressed(AhBtnKey key);
+};

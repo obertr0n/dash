@@ -7,6 +7,7 @@
 #include "app/config.hpp"
 #include "app/theme.hpp"
 #include "app/widgets/tuner.hpp"
+#include "canbus/canframes.hpp"
 
 class MediaPage : public QTabWidget {
     Q_OBJECT
@@ -19,14 +20,14 @@ class BluetoothPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    BluetoothPlayerTab(QWidget *parent = nullptr, CanFrameDecoder dec);
-    void can_callback(QByteArray payload);
+    BluetoothPlayerTab(QWidget *parent = nullptr, std::vector<CanFrameBtnDecoder> decs);
+    void can_callback(uint32_t id, QByteArray payload);
    private:
     QWidget *track_widget();
     QWidget *controls_widget();
 
     Bluetooth *bluetooth;
-    CanFrameDecoder candecoder;
+    std::vector<CanFrameBtnDecoder> framedecs;
 };
 
 class RadioPlayerTab : public QWidget {
@@ -48,10 +49,10 @@ class LocalPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    LocalPlayerTab(QWidget *parent = nullptr);
+    LocalPlayerTab(QWidget *parent = nullptr, std::vector<CanFrameBtnDecoder> decs);
 
     static QString durationFmt(int total_ms);
-    void can_callback(QByteArray payload);
+    void can_callback(uint32_t id, QByteArray payload);
    private:
     QWidget *playlist_widget();
     QWidget *seek_widget();
@@ -62,4 +63,5 @@ class LocalPlayerTab : public QWidget {
     Config *config;
     QMediaPlayer *player;
     QLabel *path_label;
+    std::vector<CanFrameBtnDecoder> framedecs;
 };

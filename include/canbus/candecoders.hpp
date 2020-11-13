@@ -18,7 +18,7 @@ AhBtnKey can_btn(QByteArray data)
     /* short press */
     if(data.at(0) == 0)
     {
-        return (AhBtnKey)data.at(1);
+        return static_cast<AhBtnKey>(data.at(1));
     }
     return INVALID_CODE; 
 }

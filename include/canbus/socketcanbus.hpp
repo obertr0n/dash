@@ -22,7 +22,7 @@ class SocketCANBus : public QObject, public ICANBus
     private:
         bool socketCANAvailable = false;
         QCanBusDevice *bus;
-        std::map<int, std::vector<std::function<void(QByteArray)>>> callbacks;
+        std::map<int, std::vector<std::function<void(uint32_t, QByteArray)>>> callbacks;
         QList<QCanBusDevice::Filter> filterList;
 
     private slots:
