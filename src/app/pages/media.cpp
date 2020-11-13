@@ -8,6 +8,7 @@
 #include <QListWidgetItem>
 #include <QMediaPlaylist>
 
+#include "canbus/socketcanbus.hpp"
 #include "app/pages/media.hpp"
 #include "app/window.hpp"
 
@@ -20,14 +21,27 @@ MediaPage::MediaPage(QWidget *parent) : QTabWidget(parent)
     this->addTab(new LocalPlayerTab(this), "Local");
 }
 
-BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent) : QWidget(parent)
+BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, CanFrameDecoder dec) : QWidget(parent)
 {
     this->bluetooth = Bluetooth::get_instance();
+
+    ICANBus *bus = SocketCANBus::get_instance();
+    std::function<void(QByteArray)> callback = std::bind(&BluetoothPlayerTab::can_callback, this, std::placeholders::_1);
+
+    bus->registerFrameHandler(dec.frameID, callback);
+    DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
 
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     layout->addWidget(this->track_widget());
     layout->addWidget(this->controls_widget());
+}
+
+void BluetoothPlayerTab::can_callback(QByteArray payload)
+{
+    DASH_LOG(info)<<"Called handler for "<<(dec.description);
+    value_label->setText(this->format_value(this->decoder(dec.decoder(payload), this->si)));
+    
 }
 
 QWidget *BluetoothPlayerTab::track_widget()

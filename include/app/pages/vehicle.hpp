@@ -11,6 +11,7 @@
 #include "app/widgets/dialog.hpp"
 
 typedef std::function<double(double, bool)> obd_decoder_t;
+typedef std::function<double(double, bool)> can_decoder_t;
 typedef QPair<QString, QString> units_t;
 
 class Gauge : public QWidget {
@@ -20,7 +21,7 @@ class Gauge : public QWidget {
     enum Orientation { BOTTOM, RIGHT };
 
     Gauge(units_t units, QFont value_font, QFont unit_font, Orientation orientation, int rate,
-          std::vector<Frame> cmds, int precision, obd_decoder_t decoder, QWidget *parent = nullptr);
+          std::vector<CanFrameDecoder> cmds, int precision, can_decoder_t decoder, QWidget *parent = nullptr);
 
     inline void start() { this->timer->start(this->rate); }
     inline void stop() { this->timer->stop(); }
@@ -31,8 +32,8 @@ class Gauge : public QWidget {
     QString null_value();
     QLabel *value_label;
 
-    obd_decoder_t decoder;
-    std::vector<Frame> cmds;
+    can_decoder_t decoder;
+    std::vector<CanFrameDecoder> candecs;
     std::map<int, double> dataMap;
 
 

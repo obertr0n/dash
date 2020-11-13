@@ -19,13 +19,14 @@ class BluetoothPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    BluetoothPlayerTab(QWidget *parent = nullptr);
-
+    BluetoothPlayerTab(QWidget *parent = nullptr, CanFrameDecoder dec);
+    void can_callback(QByteArray payload);
    private:
     QWidget *track_widget();
     QWidget *controls_widget();
 
     Bluetooth *bluetooth;
+    CanFrameDecoder candecoder;
 };
 
 class RadioPlayerTab : public QWidget {
@@ -33,7 +34,7 @@ class RadioPlayerTab : public QWidget {
 
    public:
     RadioPlayerTab(QWidget *parent = nullptr);
-
+    void can_callback(QByteArray payload);
    private:
     QWidget *tuner_widget();
     QWidget *controls_widget();
@@ -50,7 +51,7 @@ class LocalPlayerTab : public QWidget {
     LocalPlayerTab(QWidget *parent = nullptr);
 
     static QString durationFmt(int total_ms);
-
+    void can_callback(QByteArray payload);
    private:
     QWidget *playlist_widget();
     QWidget *seek_widget();

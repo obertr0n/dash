@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     DashWindow window;
     window.setWindowIcon(QIcon(":/logo.png"));
-    window.setWindowFlags(Qt::FramelessWindowHint);
+    // window.setWindowFlags(Qt::FramelessWindowHint);
 
     QSize size = dash.primaryScreen()->size();
     if (args.size() > 2)

@@ -4,11 +4,11 @@
 #include "app/pages/vehicle.hpp"
 #include "app/window.hpp"
 #include "obd/conversions.hpp"
-#include "canbus/elm327.hpp"
-#include "plugins/vehicle_plugin.hpp"
+// #include "canbus/elm327.hpp"
+// #include "plugins/vehicle_plugin.hpp"
 
 Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientation orientation, int rate,
-             std::vector<Frame> cmds, int precision, obd_decoder_t decoder, QWidget *parent)
+             std::vector<CanFrameDecoder> cmds, int precision, can_decoder_t decoder, QWidget *parent)
 : QWidget(parent)
 {
     Config *config = Config::get_instance();
@@ -25,7 +25,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     this->rate = rate;
     this->precision = precision;
 
-    this->cmds = cmds;
+    this->candecs = cmds;
     this->decoder = decoder;
 
     QBoxLayout *layout;
@@ -61,9 +61,9 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
 }
 
 void Gauge::can_callback(QByteArray payload){
-    for(auto cmd : cmds) {
-        DASH_LOG(info)<<"Called handler for "<<(cmd.description);
-        value_label->setText(this->format_value(this->decoder(cmd.decoder(payload), this->si)));
+    for(auto dec : candecs) {
+        DASH_LOG(info)<<"Called handler for "<<(dec.description);
+        value_label->setText(this->format_value(this->decoder(dec.decoder(payload), this->si)));
     }
 }
 
