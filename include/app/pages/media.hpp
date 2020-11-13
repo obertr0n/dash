@@ -20,7 +20,7 @@ class BluetoothPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    BluetoothPlayerTab(QWidget *parent = nullptr, std::vector<CanFrameBtnDecoder> decs);
+    BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs);
     void can_callback(uint32_t id, QByteArray payload);
    private:
     QWidget *track_widget();
@@ -49,7 +49,7 @@ class LocalPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    LocalPlayerTab(QWidget *parent = nullptr, std::vector<CanFrameBtnDecoder> decs);
+    LocalPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs);
 
     static QString durationFmt(int total_ms);
     void can_callback(uint32_t id, QByteArray payload);

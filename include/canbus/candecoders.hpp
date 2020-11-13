@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QByteArray.h>
+#include <QByteArray>
 #include "canbus/canframes.hpp"
 
 /* data adapted from https://github.com/megadrifter/Astra-H/blob/master/other%20examples/AstraH_CAN_test_rpm/AstraH_CAN_test_rpm.ino */

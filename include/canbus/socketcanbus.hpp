@@ -16,7 +16,7 @@ class SocketCANBus : public QObject, public ICANBus
         SocketCANBus(QString canInterface = "can0");
         ~SocketCANBus();
         static SocketCANBus *get_instance();
-        void registerFrameHandler(int id, std::function<void(QByteArray)> callback) override;
+        void registerFrameHandler(int id, std::function<void(uint32_t, QByteArray)> callback) override;
         bool writeFrame(QCanBusFrame frame) override;
 
     private:

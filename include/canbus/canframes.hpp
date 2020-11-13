@@ -55,15 +55,15 @@ struct FrameDecoders {
 
 extern FrameDecoders VehicleFrames;
 
-class AstraHDecoder public QObject
+class AstraHDecoder : public QObject
 {
     Q_OBJECT
 private:
 public:
-    AstraHDecoder();
-    ~AstraHDecoder();
+    AstraHDecoder(){};
+    ~AstraHDecoder(){};
     static void btn_press(QByteArray data);
 
-public signals:
+signals:
     void buttonPressed(AhBtnKey key);
 };

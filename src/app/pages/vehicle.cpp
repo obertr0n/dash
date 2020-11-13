@@ -3,6 +3,7 @@
 #include "app/config.hpp"
 #include "app/pages/vehicle.hpp"
 #include "app/window.hpp"
+#include "obd/conversions.hpp"
 
 Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientation orientation, int rate,
              std::vector<CanFrameMsgDecoder> frames, int precision, can_decoder_t decoder, QWidget *parent)
@@ -12,7 +13,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
     ICANBus *bus = SocketCANBus::get_instance();
 
     using namespace std::placeholders;
-    std::function<void(uint32_t QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1, std::placeholders::_2);
+    std::function<void(uint32_t, QByteArray)> callback = std::bind(&Gauge::can_callback, this, std::placeholders::_1, std::placeholders::_2);
 
     bus->registerFrameHandler(frames[0].frameID, callback);
     DASH_LOG(info)<<"[Gauges] Registered frame handler for id "<<(frames[0].frameID);
@@ -131,7 +132,7 @@ VehiclePage::VehiclePage(QWidget *parent) : QTabWidget(parent)
 
 DataTab::DataTab(QWidget *parent) : QWidget(parent)
 {
-    ICANBus *bus = SocketCANBus::get_instance();
+    // ICANBus *bus = SocketCANBus::get_instance();
 
     QHBoxLayout *layout = new QHBoxLayout(this);
 

@@ -5,5 +5,5 @@ class ICANBus {
    public:
       static ICANBus *get_instance();
       virtual bool writeFrame(QCanBusFrame frame) = 0;
-      virtual void registerFrameHandler(int id, std::function<void(QByteArray)> callback) = 0;
+      virtual void registerFrameHandler(int id, std::function<void(uint32_t, QByteArray)> callback) = 0;
 };

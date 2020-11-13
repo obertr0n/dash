@@ -27,7 +27,7 @@ class elm327 : public QObject, public ICANBus
         elm327(QString canInterface = "/dev/pts/1");
         ~elm327();
         static elm327 *get_instance();
-        void registerFrameHandler(int id, std::function<void(QByteArray)> callback) override;
+        void registerFrameHandler(int id, std::function<void(uint32_t, QByteArray)> callback) override;
         bool writeFrame(QCanBusFrame frame) override;
         void connect(QString dev_path, speed_t baudrate);
         void initialize();
@@ -36,7 +36,7 @@ class elm327 : public QObject, public ICANBus
         bool connected; 
         int fd;
         std::mutex elm_mutex;
-        std::map<int, std::vector<std::function<void(QByteArray)>>> callbacks;
+        std::map<int, std::vector<std::function<void(uint32_t, QByteArray)>>> callbacks;
 
         void connect(std::string dev_path, speed_t baudrate);
         void handleFrame(QCanBusFrame frame);

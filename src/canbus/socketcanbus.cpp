@@ -6,6 +6,7 @@ SocketCANBus::SocketCANBus(QString canInterface)
         DASH_LOG(info) << "[SocketCANBus] 'socketcan' Available";
         socketCANAvailable = true;
         QString errorString;
+        system("sudo ip link set up can0 type can bitrate 95000");
         bus = QCanBus::instance()->createDevice(
             QStringLiteral("socketcan"), canInterface, &errorString);
         if (!bus) {
@@ -54,7 +55,6 @@ void SocketCANBus::framesAvailable()
     }
     
 } 
-
 
 void SocketCANBus::registerFrameHandler(int id, std::function<void(uint32_t, QByteArray)> callback)
 {

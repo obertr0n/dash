@@ -4,11 +4,11 @@
 void AstraHDecoder::btn_press(QByteArray data)
 {
     /* short press */
-    if(data.at(0) == 0)
-    {
-        emit buttonPressed(static_cast<AhBtnKey>(data.at(1)));
-    }
-};
+    // if(data.at(0) == 0)
+    // {
+    //     emit buttonPressed(static_cast<AhBtnKey>(data.at(1)));
+    // }
+}
 
 FrameDecoders VehicleFrames = 
 {

@@ -19,7 +19,7 @@ MediaPage::MediaPage(QWidget *parent) : QTabWidget(parent)
 
     // this->addTab(new RadioPlayerTab(this), "Radio");
     this->addTab(new BluetoothPlayerTab(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "Bluetooth");
-    this->addTab(new LocalPlayerTab(this), "Local");
+    this->addTab(new LocalPlayerTab(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "Local");
 }
 
 BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs) : QWidget(parent)
@@ -67,6 +67,8 @@ void BluetoothPlayerTab::can_callback(uint32_t id, QByteArray payload)
                         media_player->next()->waitForFinished();
                     break;
                 }
+                default:
+                break;
             }
         }
     }
@@ -307,19 +309,27 @@ void LocalPlayerTab::can_callback(uint32_t id, QByteArray payload)
                 case AhBtnKey::CIM_RIGHT_DOWN:
                 case AhBtnKey::EHU_LEFT:
                 {
-                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
-                    if (media_player != nullptr)
-                        media_player->previous()->waitForFinished();
+                    if(player != nullptr)
+                    {
+                        if (player->playlist()->currentIndex() < 0) 
+                            player->playlist()->setCurrentIndex(0);
+                        player->playlist()->previous();
+                        player->play();
+                    }
                     break;
                 }
                 case AhBtnKey::CIM_RIGHT_UP:
                 case AhBtnKey::EHU_RIGHT:
                 {
-                    BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
-                    if (media_player != nullptr)
-                        media_player->next()->waitForFinished();
+                    if(player != nullptr)
+                    {
+                        player->playlist()->next();
+                        player->play();
+                    }
                     break;
                 }
+                default:
+                break;
             }
         }
     }
