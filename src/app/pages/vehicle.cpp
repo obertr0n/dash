@@ -60,7 +60,7 @@ Gauge::Gauge(units_t units, QFont value_font, QFont unit_font, Gauge::Orientatio
 
 void Gauge::can_callback(uint32_t id, QByteArray payload){
     for(auto frame : canframes) {
-        DASH_LOG(info)<<"Called handler for "<<(frame.description);
+        //DASH_LOG(info)<<"Called handler for "<<(frame.description);
         value_label->setText(this->format_value(this->decoder(frame.decoder(payload), this->si)));
     }
 }
