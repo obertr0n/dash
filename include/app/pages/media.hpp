@@ -8,26 +8,30 @@
 #include "app/theme.hpp"
 #include "app/widgets/tuner.hpp"
 #include "canbus/canframes.hpp"
+#include "app/window.hpp"
 
 class MediaPage : public QTabWidget {
     Q_OBJECT
-
    public:
-    MediaPage(QWidget *parent = nullptr);
+    MediaPage(DashWindow *parent, std::vector<CanFrameBtnDecoder> decoders);
+    void can_callback(uint32_t id, QByteArray payload);
+   private:
+    DashWindow* parent_;
+    Bluetooth* bluetooth_;
+    QMediaPlayer* mediaPlayer_;
+    std::vector<CanFrameBtnDecoder> decoders_;
 };
 
 class BluetoothPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs);
-    void can_callback(uint32_t id, QByteArray payload);
+    BluetoothPlayerTab(QWidget *parent, Bluetooth *bluetooth);
    private:
     QWidget *track_widget();
     QWidget *controls_widget();
 
     Bluetooth *bluetooth;
-    std::vector<CanFrameBtnDecoder> framedecs;
 };
 
 class RadioPlayerTab : public QWidget {
@@ -49,10 +53,9 @@ class LocalPlayerTab : public QWidget {
     Q_OBJECT
 
    public:
-    LocalPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs);
-
+    LocalPlayerTab(QWidget *parent, QMediaPlayer* player);
     static QString durationFmt(int total_ms);
-    void can_callback(uint32_t id, QByteArray payload);
+
    private:
     QWidget *playlist_widget();
     QWidget *seek_widget();
@@ -63,5 +66,4 @@ class LocalPlayerTab : public QWidget {
     Config *config;
     QMediaPlayer *player;
     QLabel *path_label;
-    std::vector<CanFrameBtnDecoder> framedecs;
 };

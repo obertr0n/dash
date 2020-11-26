@@ -28,9 +28,20 @@ class OpenAutoWorker : public QObject {
     OpenAutoWorker(std::function<void(bool)> callback, bool night_mode, QWidget *frame);
     ~OpenAutoWorker();
 
-    inline void update_size() { this->service_factory.resize(); }
-    inline void set_night_mode(bool mode) { this->service_factory.setNightMode(mode); }
-    inline void send_key_event(QKeyEvent *event) { this->service_factory.sendKeyEvent(event); }
+    inline void update_size() { this->service_factory.resize(); };
+    inline void set_night_mode(bool mode) { this->service_factory.setNightMode(mode); };
+    inline void send_key_event(QKeyEvent *event) { this->service_factory.sendKeyEvent(event); };
+    bool get_conn_status()
+    {
+        if(nullptr != usb_hub)
+        {
+            return usb_hub->getConnStatus();
+        }
+        else
+        {
+            return false;
+        }
+    };
 
    private:
     void create_usb_workers();
@@ -80,6 +91,7 @@ class OpenAutoPage : public QStackedWidget {
     OpenAutoPage(QWidget *parent = nullptr);
 
     inline void pass_key_event(QKeyEvent *event) { this->worker->send_key_event(event); }
+    bool get_device_conn_status() { return this->worker->get_conn_status(); }
 
    protected:
     void resizeEvent(QResizeEvent *event);

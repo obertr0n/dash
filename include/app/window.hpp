@@ -15,13 +15,21 @@
 #include "app/pages/openauto.hpp"
 #include "app/theme.hpp"
 
+enum DeviceStatus {
+    DEVICE_UNKNOWN,
+    DEVICE_CONNECTED = 100,
+    DEVICE_DISCONNECTED
+};
+
 class DashWindow : public QMainWindow {
     Q_OBJECT
 
    public:
     DashWindow();
     void add_widget(QWidget *widget);
-
+    DeviceStatus get_device_status();
+    void send_key_event(QKeyEvent *event);
+    
     inline QList<QAbstractButton *> get_pages() { return this->rail_group->buttons(); }
 
    protected:

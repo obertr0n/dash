@@ -15,6 +15,7 @@
 #include "app/pages/media.hpp"
 #include "app/pages/settings.hpp"
 #include "app/widgets/dialog.hpp"
+#include "canbus/canframes.hpp"
 
 DashWindow::DashWindow()
 {
@@ -65,12 +66,16 @@ void DashWindow::showEvent(QShowEvent *event)
 
 void DashWindow::keyPressEvent(QKeyEvent *event)
 {
+    Qt::Key k = static_cast<Qt::Key>(event->key());
+    DASH_LOG(info)<<"pressed "<< k;
     QMainWindow::keyPressEvent(event);
     this->openauto->pass_key_event(event);
 }
 
 void DashWindow::keyReleaseEvent(QKeyEvent *event)
 {
+    Qt::Key k = static_cast<Qt::Key>(event->key());
+    DASH_LOG(info)<<"released "<< k;
     QMainWindow::keyReleaseEvent(event);
     this->openauto->pass_key_event(event);
 }
@@ -155,7 +160,7 @@ QLayout *DashWindow::body()
 void DashWindow::add_pages()
 {
     this->add_page("Android Auto", this->openauto, "android_auto");
-    this->add_page("Media", new MediaPage(this), "play_circle_outline");
+    this->add_page("Media", new MediaPage(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "play_circle_outline");
     this->add_page("Vehicle", new VehiclePage(this), "directions_car");
     this->add_page("Camera", new CameraPage(this), "camera");
     this->add_page("Launcher", new LauncherPage(this), "widgets");
@@ -351,4 +356,25 @@ QWidget *DashWindow::power_control()
     layout->addWidget(power_off);
 
     return widget;
+}
+
+DeviceStatus DashWindow::get_device_status()
+{
+    if( nullptr == openauto)
+    {
+        return DEVICE_UNKNOWN;
+    }
+    else if(openauto->get_device_conn_status())
+    {
+        return DEVICE_CONNECTED;
+    }
+    else
+    {
+        return DEVICE_DISCONNECTED;
+    }
+}
+
+void DashWindow::send_key_event(QKeyEvent *event)
+{
+    openauto->pass_key_event(event);
 }

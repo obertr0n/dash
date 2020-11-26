@@ -3,6 +3,7 @@
 #include <tag.h>
 #include <tpropertymap.h>
 #include <BluezQt/PendingCall>
+#include <BluezQt/MediaPlayer>
 #include <QDirIterator>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -13,28 +14,32 @@
 #include "canbus/socketcanbus.hpp"
 #include "canbus/canframes.hpp"
 
-MediaPage::MediaPage(QWidget *parent) : QTabWidget(parent)
+MediaPage::MediaPage(DashWindow *parent, std::vector<CanFrameBtnDecoder> decoders) : QTabWidget(parent)
 {
     this->tabBar()->setFont(Theme::font_16);
 
-    // this->addTab(new RadioPlayerTab(this), "Radio");
-    this->addTab(new LocalPlayerTab(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "Local");
-    this->addTab(new BluetoothPlayerTab(this, {VehicleFrames.CIM_BTN, VehicleFrames.EHU_BTN}), "Bluetooth");
-}
-
-BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs) : QWidget(parent)
-{
-    this->bluetooth = Bluetooth::get_instance();
+    this->parent_ = parent;
+    this->bluetooth_ = Bluetooth::get_instance();
+    this->mediaPlayer_ = new QMediaPlayer(this);
 
     ICANBus *bus = SocketCANBus::get_instance();
-    std::function<void(uint32_t, QByteArray)> callback = std::bind(&BluetoothPlayerTab::can_callback, this, std::placeholders::_1, std::placeholders::_2);
-    
-    for (auto dec : decs)
+    std::function<void(uint32_t, QByteArray)> callback = std::bind(&MediaPage::can_callback, this, std::placeholders::_1, std::placeholders::_2);
+
+    for (auto dec : decoders)
     {
         bus->registerFrameHandler(dec.frameID, callback);
         DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
     }
-    framedecs = decs;
+    decoders_ = decoders;
+
+    // this->addTab(new RadioPlayerTab(this), "Radio");
+    this->addTab(new LocalPlayerTab(parent_, mediaPlayer_), "Local");
+    this->addTab(new BluetoothPlayerTab(parent_, bluetooth_), "Bluetooth");
+}
+
+BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, Bluetooth *bluetooth) : QWidget(parent)
+{
+    this->bluetooth = bluetooth;
 
     QVBoxLayout *layout = new QVBoxLayout(this);
 
@@ -42,29 +47,96 @@ BluetoothPlayerTab::BluetoothPlayerTab(QWidget *parent, std::vector<CanFrameBtnD
     layout->addWidget(this->controls_widget());
 }
 
-void BluetoothPlayerTab::can_callback(uint32_t id, QByteArray payload)
+void MediaPage::can_callback(uint32_t id, QByteArray payload)
 {
-    for(auto dec : framedecs)
+    DeviceStatus status = parent_->get_device_status();
+    if(DEVICE_UNKNOWN == status || DEVICE_DISCONNECTED == status)
     {
-        if(dec.frameID == id)
+        for(auto dec : decoders_)
         {
-
-            BluezQt::MediaPlayerPtr media_player = bluetooth->get_media_player().second;
-            if (media_player != nullptr)
+            if(dec.frameID == id)
             {
-                //DASH_LOG(info) << "[MEDIA] Called handler for " << (dec.description);
+                BluezQt::MediaPlayerPtr btplayer = this->bluetooth_->get_media_player().second;
+                if ((btplayer != nullptr) && (BluezQt::MediaPlayer::Status::Playing == btplayer->status()))
+                {
+                    //DASH_LOG(info) << "[MEDIA] Called handler for " << (dec.description);
+                    switch(dec.decoder(payload))
+                    {
+                        case AhBtnKey::EHU_AMFM:
+                            btplayer->pause()->waitForFinished();
+                        case AhBtnKey::CIM_RIGHT_DOWN:
+                        case AhBtnKey::EHU_LEFT:
+                            btplayer->previous()->waitForFinished();
+                            break;
+                        case AhBtnKey::CIM_RIGHT_UP:
+                        case AhBtnKey::EHU_RIGHT:
+                            btplayer->next()->waitForFinished();
+                            break;
+                        default:
+                        break;
+                    }
+                }
+                else if((nullptr != mediaPlayer_) && (QMediaPlayer::State::PlayingState == mediaPlayer_->state()))
+                {
+                    //DASH_LOG(info) << "Called handler for " << (dec.description);
+                    switch(dec.decoder(payload))
+                    {
+                        case AhBtnKey::EHU_AMFM:
+                            mediaPlayer_->pause();
+                        break;
+
+                        case AhBtnKey::CIM_RIGHT_DOWN:
+                        case AhBtnKey::EHU_LEFT:
+                            if (mediaPlayer_->playlist()->currentIndex() < 0)
+                            {
+                                mediaPlayer_->playlist()->setCurrentIndex(0);
+                            }
+                            mediaPlayer_->playlist()->previous();
+                            mediaPlayer_->play();
+                            break;
+
+                        case AhBtnKey::CIM_RIGHT_UP:
+                        case AhBtnKey::EHU_RIGHT:
+                            mediaPlayer_->playlist()->next();
+                            mediaPlayer_->play();
+                            break;
+                        default:
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        for(auto dec : decoders_)
+        {
+            if(dec.frameID == id)
+            {
                 switch(dec.decoder(payload))
                 {
                     case AhBtnKey::EHU_AMFM:
-                        media_player->pause()->waitForFinished();
+                    {
+                        QKeyEvent *ev = new QKeyEvent ( QEvent::KeyRelease, Qt::Key_B, Qt::NoModifier);
+                        parent_->send_key_event(ev);
+                    }
+                    break;
+
                     case AhBtnKey::CIM_RIGHT_DOWN:
                     case AhBtnKey::EHU_LEFT:
-                        media_player->previous()->waitForFinished();
-                        break;
+                    {
+                        QKeyEvent *ev = new QKeyEvent ( QEvent::KeyRelease, Qt::Key_V, Qt::NoModifier);
+                        parent_->send_key_event(ev);
+                    }
+                    break;
+
                     case AhBtnKey::CIM_RIGHT_UP:
                     case AhBtnKey::EHU_RIGHT:
-                        media_player->next()->waitForFinished();
-                        break;
+                    {
+                        QKeyEvent *ev = new QKeyEvent ( QEvent::KeyRelease, Qt::Key_N, Qt::NoModifier);
+                        parent_->send_key_event(ev);
+                    }
+                    break;
                     default:
                     break;
                 }
@@ -138,7 +210,7 @@ QWidget *BluetoothPlayerTab::controls_widget()
     bool status = (media_player != nullptr) ? media_player->status() == BluezQt::MediaPlayer::Status::Playing : false;
     play_button->setChecked(status);
     play_button->setIconSize(Theme::icon_56);
-    
+
     connect(play_button, &QPushButton::clicked, [bluetooth = this->bluetooth, play_button](bool checked = false) {
         play_button->setChecked(!checked);
 
@@ -265,24 +337,14 @@ QWidget *RadioPlayerTab::controls_widget()
     return widget;
 }
 
-LocalPlayerTab::LocalPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> decs) : QWidget(parent)
+LocalPlayerTab::LocalPlayerTab(QWidget *parent, QMediaPlayer* player) : QWidget(parent)
 {
     this->config = Config::get_instance();
-
-    ICANBus *bus = SocketCANBus::get_instance();
-    std::function<void(uint32_t, QByteArray)> callback = std::bind(&LocalPlayerTab::can_callback, this, std::placeholders::_1, std::placeholders::_2);
-    
-    for (auto dec : decs)
-    {
-        bus->registerFrameHandler(dec.frameID, callback);
-        DASH_LOG(info)<<"[Media] Registered frame handler for id "<<(dec.frameID);
-    }
-    framedecs = decs;
 
     QMediaPlaylist *playlist = new QMediaPlaylist(this);
     playlist->setPlaybackMode(QMediaPlaylist::Loop);
 
-    this->player = new QMediaPlayer(this);
+    this->player = player;
     this->player->setPlaylist(playlist);
 
     this->path_label = new QLabel(this->config->get_media_home(), this);
@@ -294,50 +356,6 @@ LocalPlayerTab::LocalPlayerTab(QWidget *parent, std::vector<CanFrameBtnDecoder> 
     layout->addWidget(this->playlist_widget());
     layout->addWidget(this->seek_widget());
     layout->addWidget(this->controls_widget());
-}
-
-void LocalPlayerTab::can_callback(uint32_t id, QByteArray payload)
-{
-    for(auto dec : framedecs)
-    {
-        if(dec.frameID == id)
-        {
-            DASH_LOG(info) << "Called handler for " << (dec.description);
-            switch(dec.decoder(payload))
-            {
-                case AhBtnKey::EHU_AMFM:
-                    if(player != nullptr)
-                    {
-                        player->pause();
-                    }
-                break;
-                case AhBtnKey::CIM_RIGHT_DOWN:
-                case AhBtnKey::EHU_LEFT:
-                {
-                    if(player != nullptr)
-                    {
-                        if (player->playlist()->currentIndex() < 0) 
-                            player->playlist()->setCurrentIndex(0);
-                        player->playlist()->previous();
-                        player->play();
-                    }
-                    break;
-                }
-                case AhBtnKey::CIM_RIGHT_UP:
-                case AhBtnKey::EHU_RIGHT:
-                {
-                    if(player != nullptr)
-                    {
-                        player->playlist()->next();
-                        player->play();
-                    }
-                    break;
-                }
-                default:
-                break;
-            }
-        }
-    }
 }
 
 QWidget *LocalPlayerTab::playlist_widget()
@@ -367,7 +385,7 @@ QWidget *LocalPlayerTab::playlist_widget()
     layout->addWidget(folders, 1);
 
     QListWidget *tracks = new QListWidget(widget);
-    tracks->setFont(Theme::font_14);
+    tracks->setFont(Theme::font_18);
     Theme::to_touch_scroller(tracks);
     this->populate_tracks(root_path, tracks);
     connect(tracks, &QListWidget::itemClicked, [tracks, player = this->player](QListWidgetItem *item) {
