@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #repo addresses
-aasdkRepo="https://github.com/OpenDsh/aasdk"
+aasdkRepo="https://github.com/obertr0n/aasdk"
 gstreamerRepo="git://anongit.freedesktop.org/gstreamer/qt-gstreamer"
-openautoRepo="https://github.com/openDsh/openauto"
+openautoRepo="https://github.com/obertr0n/openauto"
 
 #Help text
 display_help() {
