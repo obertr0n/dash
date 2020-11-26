@@ -66,16 +66,12 @@ void DashWindow::showEvent(QShowEvent *event)
 
 void DashWindow::keyPressEvent(QKeyEvent *event)
 {
-    Qt::Key k = static_cast<Qt::Key>(event->key());
-    DASH_LOG(info)<<"pressed "<< k;
     QMainWindow::keyPressEvent(event);
     this->openauto->pass_key_event(event);
 }
 
 void DashWindow::keyReleaseEvent(QKeyEvent *event)
 {
-    Qt::Key k = static_cast<Qt::Key>(event->key());
-    DASH_LOG(info)<<"released "<< k;
     QMainWindow::keyReleaseEvent(event);
     this->openauto->pass_key_event(event);
 }
