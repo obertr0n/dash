@@ -74,7 +74,9 @@ class DataTab : public QWidget {
     QWidget *engine_data_widget();
     QWidget *coolant_temp_widget();
     QWidget *engine_load_widget();
-
+    QWidget *outside_temp_widget();
+    QWidget *temperature_data_widget();
+    QWidget *temperature_widget();
     std::vector<Gauge *> gauges;
 };
 

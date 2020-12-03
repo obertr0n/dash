@@ -95,60 +95,35 @@ void VehiclePage::get_plugins()
 VehiclePage::VehiclePage(QWidget *parent) : QTabWidget(parent)
 {
     this->tabBar()->setFont(Theme::font_16);
+    this->addTab(new DataTab(this), "Car Data");
 
-    this->addTab(new DataTab(this), "Data");
-
-    // this->get_plugins();
-    // this->selector = new Selector(this->plugins.keys(), 0, Theme::font_14, this);
-    // this->active_plugin = new QPluginLoader(this);
-    // this->dialog = new Dialog(true, this->window());
-    // this->dialog->set_body(this->selector);
-    // this->selector->setUpdatesEnabled(true);
-    // QPushButton *load_button = new QPushButton("load");
-    // connect(load_button, &QPushButton::clicked, [this]() {
-    //     QString key = this->selector->get_current();
-    //     if (!key.isNull()) {
-    //         if (this->active_plugin->isLoaded())
-    //             this->active_plugin->unload();
-    //         this->active_plugin->setFileName(this->plugins[key].absoluteFilePath());
-
-    //         if (VehiclePlugin *plugin = qobject_cast<VehiclePlugin *>(this->active_plugin->instance())) {
-    //             DASH_LOG(info) << "trying to load vehicle plugin";
-    //             plugin->init(SocketCANBus::get_instance());
-    //             for (QWidget *tab : plugin->widgets())
-    //                 this->addTab(tab, tab->objectName());
-    //         }
-    //     }
-    // });
-    // this->dialog->set_button(load_button);
-
-    QPushButton *settings_button = new QPushButton(this);
-    settings_button->setFlat(true);
-    settings_button->setIconSize(Theme::icon_24);
-    settings_button->setIcon(Theme::get_instance()->make_button_icon("settings", settings_button));
-    connect(settings_button, &QPushButton::clicked, [this]() { this->dialog->open(); });
-    this->setCornerWidget(settings_button);
+    // QPushButton *settings_button = new QPushButton(this);
+    // settings_button->setFlat(true);
+    // settings_button->setIconSize(Theme::icon_24);
+    // settings_button->setIcon(Theme::get_instance()->make_button_icon("settings", settings_button));
+    // connect(settings_button, &QPushButton::clicked, [this]() { this->dialog->open(); });
+    // this->setCornerWidget(settings_button);
 }
 
 DataTab::DataTab(QWidget *parent) : QWidget(parent)
 {
-    // ICANBus *bus = SocketCANBus::get_instance();
-
     QHBoxLayout *layout = new QHBoxLayout(this);
 
     QWidget *driving_data = this->driving_data_widget();
     layout->addWidget(driving_data);
     layout->addWidget(Theme::br(this, true));
 
-    QWidget *engine_data = this->engine_data_widget();
-    layout->addWidget(engine_data);
+    QWidget *env_data = this->temperature_widget();
+    layout->addWidget(env_data);
 
     QSizePolicy sp_left(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    sp_left.setHorizontalStretch(5);
+    sp_left.setHorizontalStretch(3);
     driving_data->setSizePolicy(sp_left);
+    
     QSizePolicy sp_right(QSizePolicy::Preferred, QSizePolicy::Preferred);
     sp_right.setHorizontalStretch(2);
-    engine_data->setSizePolicy(sp_right);
+    env_data->setSizePolicy(sp_right);
+
     for (auto &gauge : this->gauges)
     {
         gauge->start();
@@ -188,6 +163,52 @@ QWidget *DataTab::speedo_tach_widget()
     return widget;
 }
 
+QWidget *DataTab::temperature_widget()
+{
+    QWidget *widget = new QWidget(this);
+    QHBoxLayout *layout = new QHBoxLayout(widget);
+
+    layout->addStretch();
+    layout->addWidget(this->temperature_data_widget());
+    layout->addStretch();
+    layout->addWidget(Theme::br(widget));
+    layout->addStretch();
+
+    return widget;
+}
+
+QWidget *DataTab::temperature_data_widget()
+{
+    QWidget *widget = new QWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout(widget);
+
+    Gauge *outside_temp = new Gauge(
+        {"°F", "°C"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true), Gauge::RIGHT, 5000,
+        {VehicleFrames.OUT_TEMP}, 1, [](double x, bool si) { return si ? x : c_to_f(x); }, widget);
+    layout->addWidget(outside_temp);
+    
+    this->gauges.push_back(outside_temp);
+
+    QLabel *outside_temp_label = new QLabel("Outside", widget);
+    outside_temp_label->setFont(QFont("Montserrat", 14, QFont::Light));
+    outside_temp_label->setAlignment(Qt::AlignHCenter);
+    layout->addWidget(outside_temp_label);
+
+    Gauge *coolant_temp = new Gauge(
+        {"°F", "°C"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true), Gauge::RIGHT, 5000,
+        {VehicleFrames.COOLANT_TEMP}, 1, [](double x, bool si) { return si ? x : c_to_f(x); }, widget);
+    layout->addWidget(coolant_temp);
+    
+    this->gauges.push_back(coolant_temp);
+
+    QLabel *coolant_temp_label = new QLabel("Coolant", widget);
+    coolant_temp_label->setFont(QFont("Montserrat", 14, QFont::Light));
+    coolant_temp_label->setAlignment(Qt::AlignHCenter);
+    layout->addWidget(coolant_temp_label);
+
+    return widget;
+}
+
 QWidget *DataTab::engine_data_widget()
 {
     QWidget *widget = new QWidget(this);
@@ -213,10 +234,29 @@ QWidget *DataTab::coolant_temp_widget()
     layout->addWidget(coolant_temp);
     this->gauges.push_back(coolant_temp);
 
-    QLabel *coolant_temp_label = new QLabel("coolant", widget);
+    QLabel *coolant_temp_label = new QLabel("Coolant", widget);
     coolant_temp_label->setFont(QFont("Montserrat", 14, QFont::Light));
     coolant_temp_label->setAlignment(Qt::AlignHCenter);
     layout->addWidget(coolant_temp_label);
+
+    return widget;
+}
+
+QWidget *DataTab::outside_temp_widget()
+{
+    QWidget *widget = new QWidget(this);
+    QVBoxLayout *layout = new QVBoxLayout(widget);
+
+    Gauge *outside_temp = new Gauge(
+        {"°F", "°C"}, QFont("Titillium Web", 36), QFont("Montserrat", 14, QFont::Light, true), Gauge::RIGHT, 5000,
+        {VehicleFrames.OUT_TEMP}, 1, [](double x, bool si) { return si ? x : c_to_f(x); }, widget);
+    layout->addWidget(outside_temp);
+    this->gauges.push_back(outside_temp);
+
+    QLabel *outside_temp_label = new QLabel("Outside", widget);
+    outside_temp_label->setFont(QFont("Montserrat", 14, QFont::Light));
+    outside_temp_label->setAlignment(Qt::AlignHCenter);
+    layout->addWidget(outside_temp_label);
 
     return widget;
 }
