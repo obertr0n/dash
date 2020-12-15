@@ -31,7 +31,7 @@ Config::Config()
     this->launcher_home = this->ia_config.value("Launcher/home", QDir().absolutePath()).toString();
     this->launcher_auto_launch = this->ia_config.value("Launcher/auto_launch", false).toBool();
     this->launcher_app = this->ia_config.value("Launcher/app", QString()).toString();
-    this->quick_view = this->ia_config.value("quick_view", "volume").toString();
+    this->quick_view = this->ia_config.value("quick_view", "none").toString();
     this->brightness_plugin = this->ia_config.value("brightness_plugin", "mocked").toString();
     this->controls_bar = this->ia_config.value("controls_bar", false).toBool();
     this->scale = this->ia_config.value("scale", 1.0).toDouble();
@@ -146,7 +146,7 @@ void Config::load_brightness_plugins()
 
 void Config::update_system_volume()
 {
-    static QString command("amixer set Master %1%% --quiet");
+    static QString command("amixer set Master %1% --quiet");
 
     QProcess *lProc = new QProcess();
     lProc->start(command.arg(this->volume));

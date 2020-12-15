@@ -28,9 +28,11 @@ class OpenAutoWorker : public QObject {
     OpenAutoWorker(std::function<void(bool)> callback, bool night_mode, QWidget *frame);
     ~OpenAutoWorker();
 
-    inline void update_size() { this->service_factory.resize(); };
-    inline void set_night_mode(bool mode) { this->service_factory.setNightMode(mode); };
-    inline void send_key_event(QKeyEvent *event) { this->service_factory.sendKeyEvent(event); };
+    inline void start() { this->app->waitForDevice(true); }
+    inline void set_opacity(unsigned int alpha) { this->service_factory.setOpacity(alpha); }
+    inline void update_size() { this->service_factory.resize(); }
+    inline void set_night_mode(bool mode) { this->service_factory.setNightMode(mode); }
+    inline void send_key_event(QKeyEvent *event) { this->service_factory.sendKeyEvent(event); }
     bool get_conn_status()
     {
         if(nullptr != usb_hub)
@@ -91,7 +93,6 @@ class OpenAutoPage : public QStackedWidget {
     OpenAutoPage(QWidget *parent = nullptr);
 
     inline void pass_key_event(QKeyEvent *event) { this->worker->send_key_event(event); }
-    bool get_device_conn_status() { return this->worker->get_conn_status(); }
 
    protected:
     void resizeEvent(QResizeEvent *event);
@@ -126,7 +127,6 @@ class OpenAutoPage : public QStackedWidget {
     Theme *theme;
     OpenAutoFrame *frame;
     OpenAutoWorker *worker;
-    Dialog *dialog;
 
    signals:
     void toggle_fullscreen(QWidget *widget);
