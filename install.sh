@@ -96,6 +96,7 @@ dependencies=(
 "gstreamer1.0-plugins-bad"
 "gstreamer1.0-libav"
 "gstreamer1.0-alsa"
+"gstreamer1.0-pulseaudio"
 "libgstreamer-plugins-base1.0-dev"
 "qtdeclarative5-dev"
 "qt5-default"
@@ -104,6 +105,7 @@ dependencies=(
 "qml-module-qtmultimedia"
 "libqt5serialbus5"
 "libqt5serialbus5-dev"
+"libqt5serialbus5-plugins"
 )
 
 ###############################  dependencies  #########################
