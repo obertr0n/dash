@@ -48,7 +48,6 @@ class DashWindow : public QMainWindow {
     QButtonGroup *rail_group;
     QStackedLayout *pages;
     QHBoxLayout *bar;
-    Dialog *power_dialog;
 
     void init_config();
     void init_theme();

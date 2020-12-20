@@ -94,7 +94,7 @@ void VehiclePage::get_plugins()
 
 VehiclePage::VehiclePage(QWidget *parent) : QTabWidget(parent)
 {
-    this->tabBar()->setFont(Theme::font_16);
+    this->tabBar()->setFont(Theme::font_14);
     this->addTab(new DataTab(this), "Car Data");
 
     // QPushButton *settings_button = new QPushButton(this);

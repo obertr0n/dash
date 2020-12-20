@@ -11,3 +11,4 @@ double rpm(Response resp) { return ((256.0 * (int)resp.data.at(0)) + (int)resp.d
 double speed(Response resp) { return (int)resp.data.at(0); }
 
 double flow(Response resp) { return ((256.0 * (int)resp.data.at(0)) + (int)resp.data.at(1)) / 100.0; }
+

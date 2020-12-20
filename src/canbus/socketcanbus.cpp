@@ -12,7 +12,7 @@ SocketCANBus::SocketCANBus(QString canInterface)
         if (!bus) {
             DASH_LOG(error) <<"[SocketCANBus] Error creating CAN device, " << errorString.toStdString();
         } else {
-            DASH_LOG(info) <<"[SocketCANBus] Connecting CAN interface";
+            DASH_LOG(info) <<"[SocketCANBus] Connecting CAN interface "<<canInterface.toStdString();
             bus->connectDevice();
             connect(bus, &QCanBusDevice::framesReceived,
                      this, &SocketCANBus::framesAvailable);
@@ -35,8 +35,17 @@ bool SocketCANBus::writeFrame(QCanBusFrame frame)
 
 SocketCANBus *SocketCANBus::get_instance()
 {
-    static SocketCANBus bus;
+    static SocketCANBus bus(Config::get_instance()->get_vehicle_interface());
     return &bus;
+}
+
+// QSerialBus readAllFrames introduced in 5.12 - Pi OS is stuck on 5.11, so implement our own
+QVector<QCanBusFrame> SocketCANBus::readAllFrames(int numFrames){
+    QVector<QCanBusFrame> frames = QVector<QCanBusFrame>();
+    for(int i = 0; i<numFrames; i++){
+        frames.append(bus->readFrame());
+    }
+    return frames;
 }
 
 void SocketCANBus::framesAvailable()

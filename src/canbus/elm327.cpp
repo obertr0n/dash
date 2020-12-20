@@ -2,7 +2,7 @@
 
 elm327::elm327(QString canInterface)
 {
-    DASH_LOG(info)<<"[ELM327] Connecting elm";
+    DASH_LOG(info)<<"[ELM327] Connecting elm "<<canInterface.toStdString();
     this->connect(canInterface, B115200);
     if (this->connected) this->initialize();
 
@@ -17,7 +17,7 @@ elm327::~elm327()
 
 elm327 *elm327::get_instance()
 {
-    static elm327 elm;
+    static elm327 elm(Config::get_instance()->get_vehicle_interface());
     return &elm;
 }
 
@@ -92,7 +92,7 @@ bool elm327::writeFrame(QCanBusFrame frame)
         }
         if(this->_write(ss.str())>=0){
             QCanBusFrame retFrame = this->receive();
-            if(retFrame.frameType()!=2){
+            if(retFrame.frameType()!=QCanBusFrame::ErrorFrame){
                 handleFrame(retFrame);
             }
         }

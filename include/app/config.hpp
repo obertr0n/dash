@@ -126,7 +126,7 @@ class Config : public QObject {
     inline void set_scale(double scale)
     {
         this->scale = scale;
-        emit scale_changed(this->scale);
+        // emit scale_changed(this->scale);
     }
 
     inline bool get_page(QWidget *page) { return this->pages.value(page->objectName(), true); }
@@ -167,12 +167,29 @@ class Config : public QObject {
         this->brightness_active_plugin->setFileName(this->brightness_plugins[this->brightness_plugin].absoluteFilePath());
     }
 
+    inline bool get_vehicle_can_bus() { return this->vehicle_can_bus; }
+    inline void set_vehicle_can_bus(bool vehicle_can_bus)
+    {
+        this->vehicle_can_bus = vehicle_can_bus;
+        emit vehicle_can_bus_changed(this->vehicle_can_bus);
+    }
+
+    inline QString get_vehicle_plugin() { return this->vehicle_plugin; }
+    inline void set_vehicle_plugin(QString vehicle_plugin) { this->vehicle_plugin = vehicle_plugin; }
+
+    inline QString get_vehicle_interface() { return this->vehicle_interface; }
+    inline void set_vehicle_interface(QString vehicle_interface)
+    {
+        this->vehicle_interface = vehicle_interface;
+        emit vehicle_interface_changed(this->vehicle_interface);
+    }
+
     static Config *get_instance();
 
    private:
     QMap<QString, QWidget *> quick_views;
 
-    QSettings ia_config;
+    QSettings settings;
     int volume;
     bool dark_mode;
     int brightness;
@@ -202,6 +219,9 @@ class Config : public QObject {
     bool cam_autoconnect;
     int cam_autoconnect_time_secs;
     QMap<QString, bool> pages;
+    QString vehicle_plugin;
+    bool vehicle_can_bus;
+    QString vehicle_interface;
 
     QMap<QString, QFileInfo> brightness_plugins;
     QPluginLoader *brightness_active_plugin;
@@ -218,4 +238,6 @@ class Config : public QObject {
     void scale_changed(double scale);
     void page_changed(QWidget *page, bool enabled);
     void cam_autoconnect_changed(bool enabled);
+    void vehicle_can_bus_changed(bool state);
+    void vehicle_interface_changed(QString interface);
 };

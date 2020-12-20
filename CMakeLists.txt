@@ -34,7 +34,7 @@ add_definitions(-DBOOST_ALL_DYN_LINK)
 
 find_package(Boost REQUIRED COMPONENTS system log OPTIONAL_COMPONENTS unit_test_framework)
 find_package(libusb-1.0 REQUIRED)
-find_package(Qt5 COMPONENTS Multimedia MultimediaWidgets Bluetooth Qml Quick QuickWidgets SerialBus REQUIRED)
+find_package(Qt5 COMPONENTS Multimedia MultimediaWidgets Bluetooth Qml Quick QuickWidgets SerialBus SerialPort REQUIRED)
 find_package(KF5BluezQt REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -63,11 +63,12 @@ if(GST_BUILD)
     if(RPI_BUILD)
         add_definitions(-DRPI)
         findRpiRevision( RPI_REVISION )
-        set(RPI_4_REVISIONS a03111 b03111 b03112 c03111 c03112 d03114)
-        if(RPI_REVISION IN_LIST RPI_4_REVISIONS)
+	math(EXPR RPI_MODEL "(0x${RPI_REVISION}>>4)&0xFF")
+        message( "-- Raspberry Pi Model: ${RPI_MODEL}" )
+        if(RPI_MODEL EQUAL 17)
             message("Raspberry Pi 4 Found")
             add_definitions(-DPI4)
-        endif(RPI_REVISION IN_LIST RPI_4_REVISIONS)
+        endif(RPI_MODEL EQUAL 17)
     endif(RPI_BUILD)
 endif(GST_BUILD)
 message(INFO "${GST_LIBRARIES}")
@@ -86,6 +87,7 @@ target_include_directories(dash PRIVATE
 
 target_include_directories(dash SYSTEM PRIVATE
     ${Qt5SerialBus_INCLUDE_DIRS}
+    ${Qt5SerialPort_INCLUDE_DIRS}
     ${Qt5Multimedia_INCLUDE_DIRS}
     ${Qt5MultimediaWidgets_INCLUDE_DIRS}
     ${Qt5Widgets_INCLUDE_DIRS}
@@ -113,6 +115,7 @@ target_link_libraries(dash
     openauto
     ${Boost_LIBRARIES}
     ${Qt5SerialBus_LIBRARIES}
+    ${Qt5SerialPort_LIBRARIES}
     ${Qt5Multimedia_LIBRARIES}
     ${Qt5MultimediaWidgets_LIBRARIES}
     ${Qt5Bluetooth_LIBRARIES}
@@ -137,4 +140,4 @@ target_link_libraries(dash
     ${X11_LIBRARIES}
     )
 
-
+install(TARGETS dash DESTINATION bin)

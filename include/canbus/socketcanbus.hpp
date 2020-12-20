@@ -5,9 +5,9 @@
 #include <QVector>
 #include <QByteArray>
 #include <QVariant>
-
 #include "DashLog.hpp"
 #include "canbus/ICANBus.hpp"
+#include "app/config.hpp"
 
 class SocketCANBus : public QObject, public ICANBus
 {
@@ -24,6 +24,9 @@ class SocketCANBus : public QObject, public ICANBus
         QCanBusDevice *bus;
         std::map<int, std::vector<std::function<void(uint32_t, QByteArray)>>> callbacks;
         QList<QCanBusDevice::Filter> filterList;
+
+        QVector<QCanBusFrame> readAllFrames(int numFrames);
+
 
     private slots:
         void framesAvailable();
