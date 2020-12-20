@@ -106,6 +106,8 @@ dependencies=(
 "libqt5serialbus5"
 "libqt5serialbus5-dev"
 "libqt5serialbus5-plugins"
+"libqt5serialport5"
+"libqt5serialport5-dev"
 )
 
 ###############################  dependencies  #########################
